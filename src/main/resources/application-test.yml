@@ -4,7 +4,7 @@ server:
   port: 8081
 
 vcap:
-  uri: test
+  uri: mysql://test:password@mydbhost/inventorydb
 
 # Spring properties
 spring:

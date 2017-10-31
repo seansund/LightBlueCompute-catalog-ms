@@ -1,100 +1,85 @@
 package catalog;
 
-import java.util.Random;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import catalog.models.*;
+import catalog.models.Inventory;
+import catalog.models.InventoryRepo;
 
 public class CatalogControllerTest {
+	
+	@Mock InventoryRepo itemsRepo;
+	@InjectMocks CatalogController controller;
+	
+	private 	MockMvc mockMvc;
 
-    @Test
-    public void testMarshalToJson() throws Exception {
-        final Inventory inv = new Inventory();
-        final Random rnd = new Random();
+	@Before
+	public void init() {
+		MockitoAnnotations.initMocks(this);
+		
+		mockMvc = MockMvcBuilders
+			.standaloneSetup(controller)
+			.build();
+	}
 
-        long id = rnd.nextLong();
-        int price = rnd.nextInt();
-        int stock = rnd.nextInt();
-
-        final ObjectMapper mapper = new ObjectMapper();
-        inv.setId(id);
-        inv.setName("myInv");
-        inv.setDescription("Test inventory description");
-        inv.setImg("/image/myimage.jpg");
-        inv.setImgAlt("image alt text");
-        inv.setPrice(price);
-        inv.setStock(stock);
-
-
-        final String json = mapper.writeValueAsString(inv);
-
-        // construct a json string with the above properties
-
-        final StringBuilder myJsonStr = new StringBuilder();
-
-        myJsonStr.append("{");
-        myJsonStr.append("\"id\":").append(id).append(",");
-        myJsonStr.append("\"name\":").append("\"myInv\"").append(",");
-        myJsonStr.append("\"description\":").append("\"Test inventory description\"").append(",");
-        myJsonStr.append("\"img\":").append("\"/image/myimage.jpg\"").append(",");
-        myJsonStr.append("\"imgAlt\":").append("\"image alt text\"").append(",");
-        myJsonStr.append("\"stock\":").append(stock).append(",");
-        myJsonStr.append("\"price\":").append(price);
-        myJsonStr.append("}");
-
-        final String myJson = myJsonStr.toString();
-        System.out.println("Marshalled Item to JSON:" + myJson);
-        System.out.println("My JSON String:" + myJson);
-
-        final JsonNode jsonObj = mapper.readTree(json);
-        final JsonNode myJsonObj = mapper.readTree(myJson);
-
-
-        assert (jsonObj.equals(myJsonObj));
-    }
-
-    @Test
-    public void testMarshalFromJson() throws Exception {
-        final Random rnd = new Random();
-
-        long id = rnd.nextLong();
-        int price = rnd.nextInt();
-        int stock = rnd.nextInt();
-
-        final ObjectMapper mapper = new ObjectMapper();
-
-        // construct a json string with the above properties
-
-        final StringBuilder myJsonStr = new StringBuilder();
-
-        myJsonStr.append("{");
-        myJsonStr.append("\"id\":").append(id).append(",");
-        myJsonStr.append("\"name\":").append("\"myInv\"").append(",");
-        myJsonStr.append("\"description\":").append("\"Test inventory description\"").append(",");
-        myJsonStr.append("\"img\":").append("\"/image/myimage.jpg\"").append(",");
-        myJsonStr.append("\"imgAlt\":").append("\"image alt text\"").append(",");
-        myJsonStr.append("\"stock\":").append(stock).append(",");
-        myJsonStr.append("\"price\":").append(price);
-        myJsonStr.append("}");
-
-        final String myJson = myJsonStr.toString();
-        System.out.println("My JSON String:" + myJson);
-
-        // marshall json to Item object
-
-        final Inventory inv = mapper.readValue(myJson, Inventory.class);
-
-        // make sure all the properties match up
-        assert (inv.getId() == id);
-        assert (inv.getName().equals("myInv"));
-        assert (inv.getDescription().equals("Test inventory description"));
-        assert (inv.getImg().equals("/image/myimage.jpg"));
-        assert (inv.getImgAlt().equals("image alt text"));
-        assert (inv.getStock() == stock);
-        assert (inv.getPrice() == price);
-    }
+	@Test
+	public void canary() {
+		assertThat(true, is(equalTo(true)));
+	}
+	
+	@Test
+	public void getInventory() throws Exception {
+		final List<Inventory> inventory = new ArrayList<Inventory>();
+		inventory.add(new Inventory(1));
+		inventory.add(new Inventory(2));
+		
+		when(itemsRepo.findAll()).thenReturn(inventory);
+		
+		mockMvc.perform(get("/items"))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$[0].id", is(equalTo(1))))
+			.andExpect(jsonPath("$[1].id", is(equalTo(2))));
+	}
+	
+	@Test
+	public void getById_notFound() throws Exception {
+		when(itemsRepo.exists(any())).thenReturn(false);
+		
+		mockMvc.perform(get("/items/1"))
+			.andExpect(status().isNotFound());
+	}
+	
+	@Test
+	public void getById_success() throws Exception {
+		final int id = 1;
+		Inventory inventory = new Inventory(id);
+		
+		when(itemsRepo.exists(any())).thenReturn(true);
+		when(itemsRepo.findOne(any())).thenReturn(inventory);
+		
+		mockMvc.perform(get("/items/" + id))
+			.andExpect(status().isOk())
+			.andExpect(content().contentType("application/json;charset=UTF-8"))
+			.andExpect(jsonPath("$.id", is(equalTo(id))));
+	}
 }

@@ -50,12 +50,12 @@ public class Inventory {
   }
   
   public Inventory(String name, String description, int price, String img_alt, String img, int stock) {
-    this.name = name;
-    this.description = description;
-    this.price = price;
-    this.img = img;
-    this.img_alt = img_alt;
-    this.stock = stock;
+	    this.name = name;
+	    this.description = description;
+	    this.price = price;
+	    this.img = img;
+	    this.img_alt = img_alt;
+	    this.stock = stock;
   }
 
   public long getId() {
