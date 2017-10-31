@@ -23,7 +23,7 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 @ActiveProfiles("test")
 @SpringBootTest
 @ContextConfiguration(initializers=VcapProcessor.class, loader=AnnotationConfigWebContextLoader.class)
-public class ApplicationTest {
+public class VcapProcessorTest {
 	
 	@Autowired
 	private Environment env;
